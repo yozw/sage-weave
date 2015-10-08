@@ -68,3 +68,7 @@ $x = -\frac{1}{2} \, b + \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$.
 ## Demonstration
 See the `demo/` directory for a demonstration.
 
+
+## Contributing
+I'm happy with contributions!
+
