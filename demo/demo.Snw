@@ -1,0 +1,63 @@
+\documentclass{article}
+
+%------------------------------------------------------------------------------
+% Demo for sage-weave
+%
+% To compile to a PDF file, run:
+%   weave.sage demo.Snw > demo.tex
+%   pdflatex demo.tex
+%------------------------------------------------------------------------------
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+<<>>=
+x1 = var("x1", latex_name = "x_1")
+x2 = var("x2", latex_name = "x_2")
+f = x1^2/2 + x2^2 + 2*x1 + 5*x2/2
+@
+
+\begin{document}
+We want to minimize the function:
+\begin{equation*}
+f(x_1, x_2) = \textstyle
+<<>>=
+print latex(f)
+@
+.
+\end{equation*}
+To do so, we set its first derivatives to zero:
+\begin{align*}
+\frac{\partial f}{\partial x_1} & = \textstyle
+<<>>=
+f_x1 = derivative(f, x1)
+print latex(f_x1)
+@
+= 0, \\
+\frac{\partial f}{\partial x_2} & = \textstyle
+<<>>=
+f_x2 = derivative(f, x2)
+print latex(f_x2)
+@
+= 0. 
+\end{align*}
+These equations have the unique solution
+<<>>=
+solutions = solve([f_x1 == 0, f_x2 == 0], x1, x2, solution_dict=True)
+assert len(solutions) == 1
+solution = solutions[0]
+print r"$%s = %s$ and" % (latex(x1), latex(solution[x1]))
+print r"$%s = %s$." % (latex(x2), latex(solution[x2]))
+@
+The following contour plot illustrates the fact that this point is
+a minimizer:
+<<>>=
+p = contour_plot(f, (x1, -5, 5), (x2, -5, 5), cmap = 'Blues')
+p.save('contour.pdf')
+@
+\begin{center}
+\includegraphics[width=.75\textwidth]{contour.pdf}
+\end{center}
+
+\end{document}
+

@@ -1,0 +1,46 @@
+%------------------------------------------------------------------------------
+% This file was *auto-generated* by sage-weave from demo.Snw
+% Do NOT edit unless you know what you are doing.
+%------------------------------------------------------------------------------
+%
+\documentclass{article}
+
+%------------------------------------------------------------------------------
+% Demo for sage-weave
+%
+% To compile to a PDF file, run:
+%   weave.sage demo.Snw > demo.tex
+%   pdflatex demo.tex
+%------------------------------------------------------------------------------
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+
+\begin{document}
+We want to minimize the function:
+\begin{equation*}
+f(x_1, x_2) = \textstyle
+\frac{1}{2} \, x_1^{2} + x_2^{2} + 2 \, x_1 + \frac{5}{2} \, x_2
+.
+\end{equation*}
+To do so, we set its first derivatives to zero:
+\begin{align*}
+\frac{\partial f}{\partial x_1} & = \textstyle
+x_1 + 2
+= 0, \\
+\frac{\partial f}{\partial x_2} & = \textstyle
+2 \, x_2 + \frac{5}{2}
+= 0. 
+\end{align*}
+These equations have the unique solution
+$x_1 = -2$ and
+$x_2 = -\frac{5}{4}$.
+The following contour plot illustrates the fact that this point is
+a minimizer:
+\begin{center}
+\includegraphics[width=.75\textwidth]{contour.pdf}
+\end{center}
+
+\end{document}
+
