@@ -18,7 +18,7 @@ The Sage code of the complete analysis is embedded into a LaTeX document.
 ## Usage
 Usage is quite simple. Just download the `weave.sage` script, and start
 using it. The workflow consists of two steps. The first step is to run
-Sage-weave on an input `.Snw` file (see `demos/`). This runs the Sage code
+Sage-weave on an input `.Snw` file (see `demo/`). This runs the Sage code
 inside the given `.Snw` file and produces LaTeX output. The second step
 is to compile this LaTeX output with your favorite LaTeX interpreter,
 e.g., `pdflatex`.
@@ -31,5 +31,5 @@ $ pdflatex input.tex
 ```
 
 ## Demonstration
-See the `demos/` directory for a demonstration.
+See the `demo/` directory for a demonstration.
 
