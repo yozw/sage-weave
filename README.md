@@ -30,6 +30,41 @@ $ weave.sage input.Snw > input.tex
 $ pdflatex input.tex
 ```
 
+## Example
+`.Snw` files are plain LaTeX files, with a little bit of extra syntax mixed in.
+Anything between the lines `<<>>=` and `@` is interpreted as Sage code. Any
+output from this Sage code goes directly into the LaTeX output.
+
+For example, the following `.Snw` file:
+
+```
+\documentclass{article}
+
+\begin{document}
+Solutions:
+<<>>=
+x, b, c = var('x b c')
+sol = solve([x^2 + b*x + c == 0], x)
+print "$%s$" % latex(sol[0])
+print "and"
+print "$%s$." % latex(sol[1])
+@
+\end{document}
+```
+
+results in the following LaTeX output:
+
+```
+\documentclass{article}
+
+\begin{document}
+Solutions:
+$x = -\frac{1}{2} \, b - \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$
+and
+$x = -\frac{1}{2} \, b + \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$.
+\end{document}
+```
+
 ## Demonstration
 See the `demo/` directory for a demonstration.
 
