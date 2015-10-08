@@ -37,7 +37,7 @@ output from this Sage code goes directly into the LaTeX output.
 
 For example, the following `.Snw` file:
 
-```
+```latex
 \documentclass{article}
 
 \begin{document}
@@ -54,7 +54,7 @@ print "$%s$." % latex(sol[1])
 
 results in the following LaTeX output:
 
-```
+```latex
 \documentclass{article}
 
 \begin{document}
