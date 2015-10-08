@@ -25,9 +25,10 @@ e.g., `pdflatex`.
 
 For example:
 
-```
+```shell
 $ weave.sage input.Snw > input.tex
 $ pdflatex input.tex
+```
 
 ## Demonstration
 See the `demos/` directory for a demonstration.
