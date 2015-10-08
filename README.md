@@ -1,4 +1,4 @@
-# sage-weave
+# Sage-weave
 
 Sage-weave provides a framework for mixing text and Sage code for automatic
 document generation, similar to Sweave and Rweave for the S and R languages,
@@ -15,7 +15,7 @@ the report.
 
 The Sage code of the complete analysis is embedded into a LaTeX document.
 
-## Usage
+### Usage
 Usage is quite simple. Just download the `weave.sage` script, and start
 using it. The workflow consists of two steps. The first step is to run
 Sage-weave on an input `.Snw` file (see `demo/`). This runs the Sage code
@@ -30,7 +30,7 @@ $ weave.sage input.Snw > input.tex
 $ pdflatex input.tex
 ```
 
-## Example
+### Example
 `.Snw` files are plain LaTeX files, with a little bit of extra syntax mixed in.
 Anything between the lines `<<>>=` and `@` is interpreted as Sage code. Any
 output from this Sage code goes directly into the LaTeX output.
@@ -65,10 +65,10 @@ $x = -\frac{1}{2} \, b + \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$.
 \end{document}
 ```
 
-## Demonstration
+### Demonstration
 See the `demo/` directory for a demonstration.
 
 
-## Contributing
+### Contributing
 I'm happy with contributions!
 
