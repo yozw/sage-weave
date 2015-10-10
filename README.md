@@ -38,7 +38,7 @@ expressions, the `\sageexpr` LaTeX command can be used.
 
 For example, the following `.Snw` file:
 
-```
+```latex
 \documentclass{article}
 
 <<>>=
@@ -55,7 +55,7 @@ and $\sageexpr{latex(sol[1])}$.
 
 results in the following LaTeX output:
 
-```
+```latex
 \documentclass{article}
 
 \begin{document}
