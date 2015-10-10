@@ -1,8 +1,11 @@
+"""Unit tests for weave.sage."""
+
 from weave import parse_sage_expressions
 from sage.misc.sage_unittest import InstanceTester
 
 def sageEval(x):
   return eval(preparse(x))
+
 
 class SageExprTests(SageObject):
   def expect(self, tester, input, output):
