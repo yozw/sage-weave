@@ -1,8 +1,9 @@
 # Sage-weave
 
-Sage-weave provides a framework for mixing text and Sage code for automatic
-document generation, similar to Sweave and Rweave for the S and R languages,
-respectively.
+Sage-weave provides a framework for mixing text and
+[Sage](http://www.sagemath.org/) code for automatic document generation,
+similar to [Sweave](https://www.statistik.lmu.de/~leisch/Sweave/) for
+the R language.
 
 Sage-weave allows you to create a single source file that contains both
 LaTeX text and Sage code. These are then 'woven' into a final LaTeX document
