@@ -141,7 +141,8 @@ class Interpreter:
   def weave_line(self, line):
     """Weaves one line by parse \sageexpr{} commands."""
     def evaluate(expr):
-      return eval(preparse(expr), self.scope)
+      return latex(eval(preparse(expr), self.scope))
+
     return parse_sage_expressions(line, evaluate)
   
   def weave(self):

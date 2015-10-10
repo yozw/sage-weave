@@ -22,12 +22,12 @@ f_x2 = derivative(f, x2)
 \begin{document}
 We want to minimize the function:
 \begin{equation*}
-f(x_1, x_2) = \textstyle\sageexpr{latex(f)}.
+f(x_1, x_2) = \textstyle\sageexpr{f}.
 \end{equation*}
 To do so, we set its first derivatives to zero:
 \begin{align*}
-\frac{\partial f}{\partial x_1} & = \textstyle \sageexpr{latex(f_x1)} = 0, \\
-\frac{\partial f}{\partial x_2} & = \textstyle \sageexpr{latex(f_x2)} = 0.
+\frac{\partial f}{\partial x_1} & = \textstyle \sageexpr{f_x1} = 0, \\
+\frac{\partial f}{\partial x_2} & = \textstyle \sageexpr{f_x2} = 0.
 \end{align*}
 These equations have the unique solution
 <<>>=

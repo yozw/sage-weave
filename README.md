@@ -34,7 +34,8 @@ $ pdflatex input.tex
 `.Snw` files are plain LaTeX files, with a little bit of extra syntax mixed in.
 Anything between the lines `<<>>=` and `@` is interpreted as Sage code. Any
 output from this Sage code goes directly into the LaTeX output. For shorter
-expressions, the `\sageexpr` LaTeX command can be used.
+expressions, the `\sageexpr` LaTeX command can be used: the Sage expression
+within the curly braces is evaluated and represented as LaTeX output.
 
 For example, the following `.Snw` file:
 
@@ -47,8 +48,8 @@ sol = solve([x^2 + b*x + c == 0], x)
 @
 
 \begin{document}
-Solutions: $\sageexpr{latex(sol[0])}$
-and $\sageexpr{latex(sol[1])}$.
+Solutions: $\sageexpr{sol[0]}$
+and $\sageexpr{sol[1]}$.
 \end{document}
 ```
 
