@@ -1,6 +1,7 @@
 #!/usr/local/bin/sage
 
 from cStringIO import StringIO
+import traceback
 import os
 import sys
 import argparse
@@ -122,14 +123,19 @@ class Interpreter:
     capture_stdout = StringIO()
 
     sys.stderr.write("Running sage code starting at line %d.\n" % line_no_start)
+
     # Execute the Python code
     try:
       sys.stdout = capture_stdout
       exec preparsed_code in self.scope
-    except e:
+    except Exception, e:
       # Restore stdout
       sys.stdout = old_stdout
-      print "Exception was thrown:", e
+      sys.stderr.write("An exception was thrown while running the following Sage code:\n")
+      sys.stderr.write("\n".join(code))
+      sys.stderr.write("\n\n")
+      sys.stderr.write(traceback.format_exc())
+      sys.stderr.write("\n")
       sys.exit(1)
 
     # Restore stdout
@@ -141,7 +147,15 @@ class Interpreter:
   def weave_line(self, line):
     """Weaves one line by parse \sageexpr{} commands."""
     def evaluate(expr):
-      return latex(eval(preparse(expr), self.scope))
+      try:
+        return latex(eval(preparse(expr), self.scope))
+      except Exception, e:
+        sys.stderr.write("An exception was thrown while evaluating the following Sage expression:\n")
+        sys.stderr.write("  " + expr)
+        sys.stderr.write("\n\n")
+        sys.stderr.write(traceback.format_exc())
+        sys.stderr.write("\n")
+        sys.exit(1)
 
     return parse_sage_expressions(line, evaluate)
   
