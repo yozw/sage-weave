@@ -49,7 +49,6 @@ sol = solve([x^2 + b*x + c == 0], x)
 \begin{document}
 Solutions: $\sageexpr{latex(sol[0])}$
 and $\sageexpr{latex(sol[1])}$.
-@
 \end{document}
 ```
 
