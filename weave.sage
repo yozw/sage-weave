@@ -1,10 +1,21 @@
 #!/usr/local/bin/sage
 
-from cStringIO import StringIO
-import traceback
-import os
-import sys
 import argparse
+import os
+import re
+import sys
+import traceback
+
+from cStringIO import StringIO
+
+AUTOGENERATE_MSG = [
+    "%" + ("-" * 78),
+    "% This file was *auto-generated* by sage-weave.",
+    "% Do NOT edit unless you know what you are doing.",
+    "%" + ("-" * 78),
+    "%"
+]
+
 
 class LatexTokenReader(SageObject):
   QUOTE="'"
@@ -78,6 +89,25 @@ def delete_common_indentation(lines):
   return new_lines  
 
 
+class Snippet:
+  """ Code snippet embedded in weaved file. """
+  last_snippet_id = [0]
+
+  def __init__(self, code, line_no):
+    self.code = code
+    self.line_no = line_no
+    self.last_snippet_id[0] += 1
+    self.id = self.last_snippet_id[0]
+
+  def format(self, mark = None):
+    lines = []
+    for i, line in enumerate(self.code):
+      marker = ">>>" if i + 1 == mark else ""
+      real_lineno = i + self.line_no + 1
+      sys.stderr.write('%3s %3d: %s\n' % (marker, real_lineno, line))
+    return "\n".join(lines) + "\n"
+
+
 class Interpreter:
   """ Interpreter for Sage-weave files. """
   
@@ -86,6 +116,7 @@ class Interpreter:
     self.output_stream = output_stream
     self.scope = scope
     self.line_no = 0
+    self.snippets = {}
         
   def get_line(self):
     self.line_no += 1
@@ -100,6 +131,28 @@ class Interpreter:
     self.output_stream.write(string)
     self.output_stream.write("\n")
     
+  def get_snippet_from_id(self, id):
+    """Gets the snippet with the given file id (of the form <sageweave#lineno>)."""
+    match = re.search(r'<sageweave#(\d+)>', id)
+    if match and match.lastindex:
+      index = int(match.group(match.lastindex))
+      return self.snippets[index]
+    else:
+      return None
+
+  def print_trace(self, trace):
+    """Prints stack trace (after exception)"""
+    sys.stderr.write('Traceback:\n')
+    for filename, lineno, func, _ in trace:
+      trace_snippet = self.get_snippet_from_id(filename)
+      if trace_snippet:
+        real_lineno = lineno + trace_snippet.line_no
+        sys.stderr.write('  Sage snippet #%d, line %d, in %s:\n' \
+                         % (trace_snippet.id, real_lineno, func))
+        sys.stderr.write(trace_snippet.format(mark = lineno))
+      else:
+        sys.stderr.write('  %s, line %d, in %s\n' % (filename, lineno, func))
+
   def weave_code(self):
     # Gather Sage code to be executed
     line_no_start = self.line_no
@@ -111,31 +164,43 @@ class Interpreter:
       if line.strip() == "@":
         break
       code.append(line)
-            
+
     # Remove any common indentation
     code = delete_common_indentation(code)
     
+    # Store snippet
+    snippet = Snippet(code, line_no_start)
+    self.snippets[snippet.id] = snippet
+
     # Pre-parse the Sage code into Python code
     preparsed_code = preparse("\n".join(code))
-    
+
+    # Compile Python code
+    try:
+      compiled_code = compile(preparsed_code, '<sageweave#%d>' % snippet.id, 'exec')
+    except SyntaxError, e:
+      sys.stderr.write("Syntax error while compiling code:\n")
+      sys.stderr.write(snippet.format(mark = e.lineno))
+      sys.stderr.write("Error: %s\n" % e)
+      sys.exit(1)
+
     # Capture any output
     old_stdout = sys.stdout
     capture_stdout = StringIO()
 
-    sys.stderr.write("Running sage code starting at line %d.\n" % line_no_start)
-
     # Execute the Python code
     try:
       sys.stdout = capture_stdout
-      exec preparsed_code in self.scope
+      exec(compiled_code, self.scope)
     except Exception, e:
       # Restore stdout
       sys.stdout = old_stdout
-      sys.stderr.write("An exception was thrown while running the following Sage code:\n")
-      sys.stderr.write("\n".join(code))
-      sys.stderr.write("\n\n")
-      sys.stderr.write(traceback.format_exc())
-      sys.stderr.write("\n")
+
+      # Print debug trace
+      _, _, tb = sys.exc_info()
+      trace = traceback.extract_tb(tb)[1:]
+      self.print_trace(trace)
+      sys.stderr.write("%s: %s\n" % (type(e).__name__, e.message))
       sys.exit(1)
 
     # Restore stdout
@@ -149,12 +214,18 @@ class Interpreter:
     def evaluate(expr):
       try:
         return latex(eval(preparse(expr), self.scope))
+      except SyntaxError, e:
+        sys.stderr.write("Syntax error while evaluating Sage expression:\n")
+        sys.stderr.write("  %s\n" % expr)
+        sys.stderr.write("Error: %s\n" % e)
+        sys.exit(1)
       except Exception, e:
-        sys.stderr.write("An exception was thrown while evaluating the following Sage expression:\n")
-        sys.stderr.write("  " + expr)
-        sys.stderr.write("\n\n")
-        sys.stderr.write(traceback.format_exc())
-        sys.stderr.write("\n")
+        _, _, tb = sys.exc_info()
+        trace = traceback.extract_tb(tb)[1:]
+        sys.stderr.write("Exception while evaluating Sage expression:\n")
+        sys.stderr.write("  %s\n" % expr)
+        self.print_trace(trace)
+        sys.stderr.write("%s: %s\n" % (type(e).__name__, e.message))
         sys.exit(1)
 
     return parse_sage_expressions(line, evaluate)
@@ -170,9 +241,20 @@ class Interpreter:
         line = self.weave_line(line)
         self.output_ln(line)
 
+
 def main(args):
   """ Sage-weave main entry point """
   
+  # Override default output: - if input is -, else replace extension by .tex.
+  if args.output == '':
+    if args.input == '-':
+      args.output = '-'
+    else:
+      (root, ext) = os.path.splitext(args.input)
+      args.output = root + ".tex"
+      # TODO: Check that the file either does not exist, or starts with the
+      # 'autogenerated' header.
+
   # Open input stream
   input_stream = sys.stdin if args.input == "-" else open(args.input)
 
@@ -180,11 +262,8 @@ def main(args):
   output_stream = sys.stdout if args.output == "-" else open(args.output, "wt")
   
   # Output a warning stating that this file is auto-generated
-  output_stream.write("%" + ("-" * 78) + "\n")
-  output_stream.write("% This file was *auto-generated* by sage-weave from " + args.input + "\n")
-  output_stream.write("% Do NOT edit unless you know what you are doing.\n")
-  output_stream.write("%" + ("-" * 78) + "\n")
-  output_stream.write("%\n")
+  output_stream.write("\n".join(AUTOGENERATE_MSG))
+  output_stream.write("\n")
 
   # Create an empty scope in which all embedded code will run
   scope = dict(globals())
@@ -201,10 +280,17 @@ def main(args):
     if args.output != "-":
       output_stream.close()
 
+
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='Process some integers.')
-  parser.add_argument('input', metavar='<input>', default='-', help='input file (- for stdin)')
-  parser.add_argument('-o', dest='output', default='-', help='output file (- for stdout)')
+  parser = argparse.ArgumentParser(
+      description='Sage-weave is a tool for embedding Sage code in LaTeX documents.')
+  parser.prog = "weave.sage"
+  parser.add_argument('input', metavar='<input>',
+                      nargs='?', default='-',
+                      help='input file (- for stdin)')
+  parser.add_argument('-o', dest='output',
+                      default='',
+                      help='output file (- for stdout)')
 
   args = parser.parse_args()    
   main(args)
