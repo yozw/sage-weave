@@ -16,12 +16,52 @@ AUTOGENERATE_MSG = [
     "%"
 ]
 
+class SageWeaveException(Exception):
+  """Exception thrown when compiling or running weaved Sage code."""
+  def __init__(self, exception, interpreter, trace = None):
+    super(Exception, self).__init__()
+    self.exception = exception
+    self.interpreter = interpreter
+    self.trace = trace
+    self.message = "%s: %s" % (type(self.exception).__name__, self.exception.message)
+
+  def __repr__(self):
+    return "SageWeaveException: " + self.message
+
+  def __str__(self):
+    return self.message
+
+  def traceback(self):
+    """Returns stack trace"""
+    lines = []
+    for filename, lineno, func, _ in self.trace:
+      trace_snippet = self.interpreter.get_snippet_from_id(filename)
+      if trace_snippet:
+        real_lineno = lineno + trace_snippet.line_no
+        lines.append('  File "%s", line %d, in %s:' \
+                         % (self.interpreter.filename, real_lineno, func))
+        lines.append(trace_snippet.format(mark = lineno))
+      else:
+        lines.append('  File "%s", line %d, in %s' % (filename, lineno, func))
+    return "\n".join(lines)
+
+
+class SageWeaveSyntaxError(SageWeaveException):
+  """Exception thrown when a syntax error occurs while compiling weaved Sage code."""
+  def __init__(self, exception, interpreter, funcname = "?"):
+    filename = exception.filename
+    lineno = exception.lineno
+    trace = [(filename, lineno, funcname, None)]
+    exception.message = exception.msg
+    super(SageWeaveSyntaxError, self).__init__(exception, interpreter, trace)
+
 
 class LatexTokenReader(SageObject):
+  """Latex token reader. Reads one LaTeX token."""
+
   QUOTE="'"
   DQUOTE='"'
 
-  """Reads one LaTeX token."""
   def __init__(self):
     self.stack = []
     self.string = ""
@@ -55,6 +95,32 @@ class LatexTokenReader(SageObject):
     return sage_expr
 
 
+class Snippet:
+  """Code snippet embedded in weaved file."""
+  last_snippet_id = [0]
+
+  def __init__(self, code, line_no):
+    self.code = code
+    self.line_no = line_no
+    self.last_snippet_id[0] += 1
+    self.id = self.last_snippet_id[0]
+
+  def format(self, mark = None):
+    lines = []
+    for i, line in enumerate(self.code):
+      marker = ">>>" if i + 1 == mark else ""
+      real_lineno = i + self.line_no + 1
+      lines.append('%3s %3d: %s' % (marker, real_lineno, line))
+    return "\n".join(lines)
+    
+  def compile(self, mode):
+    # Pre-parse the Sage code into Python code
+    preparsed_code = preparse("\n".join(self.code))
+
+    # Compile Python code
+    return compile(preparsed_code, '<sageweave#%d>' % self.id, mode)
+
+
 def parse_sage_expressions(string, evalFn):
   """Takes a string and evaluates all \sageexpr{} expressions in it."""
   output = ""
@@ -74,9 +140,9 @@ def parse_sage_expressions(string, evalFn):
 
 
 def delete_common_indentation(lines):
-  """ Deletes any common indentation of a given list of strings, i.e., if all
+  """Deletes any common indentation of a given list of strings, i.e., if all
   non-empty lines start with k spaces, the first k characters of each non-empty
-  line are removed. """
+  line are removed."""
   spaces = [len(line) - len(line.lstrip(' ')) for line in lines if len(line.strip()) > 0]
   if len(spaces) == 0: return lines
   start = min(spaces)
@@ -89,46 +155,34 @@ def delete_common_indentation(lines):
   return new_lines  
 
 
-class Snippet:
-  """ Code snippet embedded in weaved file. """
-  last_snippet_id = [0]
-
-  def __init__(self, code, line_no):
-    self.code = code
-    self.line_no = line_no
-    self.last_snippet_id[0] += 1
-    self.id = self.last_snippet_id[0]
-
-  def format(self, mark = None):
-    lines = []
-    for i, line in enumerate(self.code):
-      marker = ">>>" if i + 1 == mark else ""
-      real_lineno = i + self.line_no + 1
-      sys.stderr.write('%3s %3d: %s\n' % (marker, real_lineno, line))
-    return "\n".join(lines) + "\n"
-
-
 class Interpreter:
-  """ Interpreter for Sage-weave files. """
+  """Interpreter for Sage-weave files."""
   
-  def __init__(self, input_stream, output_stream, scope, filename = ''):
+  def __init__(self, input_stream, output_stream, filename = '?'):
     self.input_stream = input_stream
     self.output_stream = output_stream
-    self.scope = scope
-    self.filename = filename
     self.line_no = 0
     self.snippets = {}
+
+    # All weaved code runs in a shared scope. Set up the scope by setting the
+    # __file__ attibute and importing Sage into the weave scope.
+    self.scope = {'__file__': filename}
+    exec "from sage.all_cmdline import *" in self.scope
+    self.filename = os.path.basename(filename)
         
   def get_line(self):
+    """Reads one line from the input stream."""
     self.line_no += 1
     line = self.input_stream.readline()
     if not line: return None
     return line.rstrip('\n')
     
   def output(self, string):
+    """Writes the given string to the output stream."""
     self.output_stream.write(string)
 
   def output_ln(self, string):
+    """Writes the given string, followed by a newline, to the output stream."""
     self.output_stream.write(string)
     self.output_stream.write("\n")
     
@@ -140,19 +194,11 @@ class Interpreter:
       return self.snippets[index]
     else:
       return None
-
-  def print_trace(self, trace):
-    """Prints stack trace (after exception)"""
-    sys.stderr.write('Traceback:\n')
-    for filename, lineno, func, _ in trace:
-      trace_snippet = self.get_snippet_from_id(filename)
-      if trace_snippet:
-        real_lineno = lineno + trace_snippet.line_no
-        sys.stderr.write('  File "%s", line %d, in %s:\n' \
-                         % (self.filename, real_lineno, func))
-        sys.stderr.write(trace_snippet.format(mark = lineno))
-      else:
-        sys.stderr.write('  File "%s", line %d, in %s\n' % (filename, lineno, func))
+  
+  def new_snippet(self, code, line_start):
+    snippet = Snippet(code, line_start)
+    self.snippets[snippet.id] = snippet
+    return snippet
 
   def weave_code(self):
     # Gather Sage code to be executed
@@ -161,7 +207,7 @@ class Interpreter:
     while True:
       line = self.get_line()
       if line == None:
-        raise Exception("Unexpected end of file")
+        raise SageWeaveException("Unexpected end of file", self)
       if line.strip() == "@":
         break
       code.append(line)
@@ -170,64 +216,44 @@ class Interpreter:
     code = delete_common_indentation(code)
     
     # Store snippet
-    snippet = Snippet(code, line_no_start)
-    self.snippets[snippet.id] = snippet
-
-    # Pre-parse the Sage code into Python code
-    preparsed_code = preparse("\n".join(code))
-
-    # Compile Python code
-    try:
-      compiled_code = compile(preparsed_code, '<sageweave#%d>' % snippet.id, 'exec')
-    except SyntaxError, e:
-      sys.stderr.write("Syntax error while compiling code:\n")
-      sys.stderr.write(snippet.format(mark = e.lineno))
-      sys.stderr.write("Error: %s\n" % e)
-      sys.exit(1)
+    snippet = self.new_snippet(code, line_no_start)
 
     # Capture any output
     old_stdout = sys.stdout
     capture_stdout = StringIO()
 
     # Execute the Python code
+    sys.stdout = capture_stdout
     try:
-      sys.stdout = capture_stdout
-      exec(compiled_code, self.scope)
+      exec(snippet.compile('exec'), self.scope)
+    except SyntaxError, e:
+      raise SageWeaveSyntaxError(e, self)
     except Exception, e:
+      # Generate stack trace and re-throw
+      _, _, tb = sys.exc_info()
+      trace = traceback.extract_tb(tb)[1:]
+      raise SageWeaveException(e, self, trace)
+    finally:
       # Restore stdout
       sys.stdout = old_stdout
 
-      # Print debug trace
-      _, _, tb = sys.exc_info()
-      trace = traceback.extract_tb(tb)[1:]
-      self.print_trace(trace)
-      sys.stderr.write("%s: %s\n" % (type(e).__name__, e.message))
-      sys.exit(1)
-
-    # Restore stdout
-    sys.stdout = old_stdout
-      
     # Write any output generated by the code to the output stream
     self.output(capture_stdout.getvalue())
     
   def weave_line(self, line):
     """Weaves one line by parse \sageexpr{} commands."""
     def evaluate(expr):
+      snippet = self.new_snippet([expr], self.line_no - 1)
       try:
-        return latex(eval(preparse(expr), self.scope))
+        result = eval(snippet.compile('eval'), self.scope)
+        return latex(result)
       except SyntaxError, e:
-        sys.stderr.write("Syntax error while evaluating Sage expression:\n")
-        sys.stderr.write("  %s\n" % expr)
-        sys.stderr.write("Error: %s\n" % e)
-        sys.exit(1)
+        raise SageWeaveSyntaxError(e, self, r"\sageexpr{}")
       except Exception, e:
         _, _, tb = sys.exc_info()
         trace = traceback.extract_tb(tb)[1:]
-        sys.stderr.write("Exception while evaluating Sage expression:\n")
-        sys.stderr.write("  %s\n" % expr)
-        self.print_trace(trace)
-        sys.stderr.write("%s: %s\n" % (type(e).__name__, e.message))
-        sys.exit(1)
+        trace[0] = (self.filename, self.line_no, r"\sageexpr{}", None)
+        raise SageWeaveException(e, self, trace)
 
     return parse_sage_expressions(line, evaluate)
   
@@ -270,12 +296,11 @@ def main(args):
   scope = dict(globals())
 
   # Override the __file__ variable in the embedded scope
-  scope["__file__"] = os.path.realpath(args.input) if args.input != "-" else "stdin"
+  filename = os.path.realpath(args.input) if args.input != "-" else "stdin"
   
   # Run the interpreter for the input stream
   try:
-    filename = '<stdin>' if args.input == '-' else os.path.basename(args.input)
-    interpreter = Interpreter(input_stream, output_stream, scope, filename=filename)
+    interpreter = Interpreter(input_stream, output_stream, filename)
     interpreter.weave()
   finally:
     # Close the output file, if necessary
@@ -294,6 +319,13 @@ if __name__ == "__main__":
                       default='',
                       help='output file (- for stdout)')
 
-  args = parser.parse_args()    
-  main(args)
+  args = parser.parse_args()
+  try:
+    main(args)
+  except SageWeaveException, e:
+    sys.stderr.write('Traceback:\n')
+    sys.stderr.write(e.traceback() + '\n')
+    sys.stderr.write(e.message + '\n')
+  except Exception, e:
+    print(traceback.format_exc())
 
