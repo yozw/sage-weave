@@ -73,9 +73,6 @@ This, in result, is rendered as follows by PdfLaTeX:
 
 ![example](figures/example.png)
 
-### Demonstration
-See the `demo/` directory for a demonstration.
-
 ### Importing code from other Sage or python modules
 Importing code from other Sage or python modules is done in exactly the same
 way as in regular Sage:
@@ -90,6 +87,9 @@ from module import my_function
 My function returns: \sageexpr{my_function()}.
 \end{document}
 ```
+
+### Demonstration
+See the `demo/` directory for a demonstration.
 
 ### Contributing
 Feel free to make pull requests, as I'm generally happy with contributions.
