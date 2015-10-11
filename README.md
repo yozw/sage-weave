@@ -27,7 +27,7 @@ e.g., `pdflatex`.
 For example:
 
 ```shell
-$ weave.sage input.Snw > input.tex
+$ weave.sage input.Snw
 $ pdflatex input.tex
 ```
 
