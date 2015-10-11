@@ -17,7 +17,8 @@ the report.
 The Sage code of the complete analysis is embedded into a LaTeX document.
 
 ### Usage
-Usage is quite simple. Just download the `weave.sage` script, and start
+Assuming that you already have [Sage](http://www.sagemath.org/) installed,
+usage is quite simple. Just download the `weave.sage` script, and start
 using it. The workflow consists of two steps. The first step is to run
 Sage-weave on an input `.Snw` file (see `demo/`). This runs the Sage code
 inside the given `.Snw` file and produces LaTeX output. The second step
@@ -27,9 +28,12 @@ e.g., `pdflatex`.
 For example:
 
 ```shell
-$ weave.sage input.Snw
+$ sage weave.sage input.Snw
 $ pdflatex input.tex
 ```
+
+(Note that it is also possible to make the file `weave.sage` executable
+and run it directly.)
 
 ### Example
 `.Snw` files are plain LaTeX files, with a little bit of extra syntax mixed in.
@@ -72,7 +76,21 @@ This, in result, is rendered as follows by PdfLaTeX:
 ### Demonstration
 See the `demo/` directory for a demonstration.
 
+### Importing code from other Sage or python modules
+Importing code from other Sage or python modules is done in exactly the same
+way as in regular Sage:
+
+```latex
+\documentclass{article}
+<<>>=
+from module import my_function
+@
+
+\begin{document}
+My function returns: \sageexpr{my_function()}.
+\end{document}
+```
 
 ### Contributing
-I'm happy with contributions!
+Feel free to make pull requests, as I'm generally happy with contributions.
 
