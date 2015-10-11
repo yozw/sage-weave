@@ -111,10 +111,11 @@ class Snippet:
 class Interpreter:
   """ Interpreter for Sage-weave files. """
   
-  def __init__(self, input_stream, output_stream, scope):
+  def __init__(self, input_stream, output_stream, scope, filename = ''):
     self.input_stream = input_stream
     self.output_stream = output_stream
     self.scope = scope
+    self.filename = filename
     self.line_no = 0
     self.snippets = {}
         
@@ -147,11 +148,11 @@ class Interpreter:
       trace_snippet = self.get_snippet_from_id(filename)
       if trace_snippet:
         real_lineno = lineno + trace_snippet.line_no
-        sys.stderr.write('  Sage snippet #%d, line %d, in %s:\n' \
-                         % (trace_snippet.id, real_lineno, func))
+        sys.stderr.write('  File "%s", line %d, in %s:\n' \
+                         % (self.filename, real_lineno, func))
         sys.stderr.write(trace_snippet.format(mark = lineno))
       else:
-        sys.stderr.write('  %s, line %d, in %s\n' % (filename, lineno, func))
+        sys.stderr.write('  File "%s", line %d, in %s\n' % (filename, lineno, func))
 
   def weave_code(self):
     # Gather Sage code to be executed
@@ -273,7 +274,8 @@ def main(args):
   
   # Run the interpreter for the input stream
   try:
-    interpreter = Interpreter(input_stream, output_stream, scope)
+    filename = '<stdin>' if args.input == '-' else os.path.basename(args.input)
+    interpreter = Interpreter(input_stream, output_stream, scope, filename=filename)
     interpreter.weave()
   finally:
     # Close the output file, if necessary
