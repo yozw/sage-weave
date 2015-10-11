@@ -71,7 +71,7 @@ and $x = -\frac{1}{2} \, b + \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$.
 
 This, in result, is rendered as follows by PdfLaTeX:
 
-<img src="figures/example.png" height="20pt">
+<p align="center"><img src="figures/example.png" height="24pt"></p>
 
 ### Importing code from other Sage or python modules
 Importing code from other Sage or python modules is done in exactly the same
