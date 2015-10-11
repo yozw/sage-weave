@@ -16,6 +16,7 @@ the report.
 
 The Sage code of the complete analysis is embedded into a LaTeX document.
 
+
 ### Usage
 Assuming that you already have [Sage](http://www.sagemath.org/) installed,
 usage is quite simple. Just download the `weave.sage` script, and start
@@ -73,6 +74,33 @@ This, in result, is rendered as follows by PdfLaTeX:
 
 <p align="center"><img src="figures/example.png" height="24pt"></p>
 
+
+### Inserting figures
+Sage provides functionality to save figures as pdf files (or other file
+formats if necessary). This can directly be used to include Sage-generated
+figures.
+
+For example:
+
+```latex
+\documentclass{article}
+\usepackage{graphicx}
+
+\begin{document}
+<<>>=
+x1 = var("x1", latex_name = 'x_1')
+x2 = var("x2", latex_name = 'x_2')
+p = contour_plot(x1^2 + x2^2 + x1*x2, (x1, -5, 5), (x2, -5, 5), cmap = 'Blues')
+p.save('contour.pdf')
+@
+\begin{center}
+\includegraphics[width=.75\textwidth]{contour.pdf}
+\end{center}
+\end{document}
+```
+
+See also the demo in `demo/`.
+
 ### Importing code from other Sage or python modules
 Importing code from other Sage or python modules is done in exactly the same
 way as in regular Sage:
@@ -88,8 +116,10 @@ My function returns: \sageexpr{my_function()}.
 \end{document}
 ```
 
+
 ### Demonstration
 See the `demo/` directory for a demonstration.
+
 
 ### Contributing
 Feel free to make pull requests, as I'm generally happy with contributions.
