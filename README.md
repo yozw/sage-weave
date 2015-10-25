@@ -16,8 +16,10 @@ the report.
 
 The Sage code of the complete analysis is embedded into a LaTeX document.
 
+
 ### Usage
-Usage is quite simple. Just download the `weave.sage` script, and start
+Assuming that you already have [Sage](http://www.sagemath.org/) installed,
+usage is quite simple. Just download the `weave.sage` script, and start
 using it. The workflow consists of two steps. The first step is to run
 Sage-weave on an input `.Snw` file (see `demo/`). This runs the Sage code
 inside the given `.Snw` file and produces LaTeX output. The second step
@@ -27,9 +29,12 @@ e.g., `pdflatex`.
 For example:
 
 ```shell
-$ weave.sage input.Snw > input.tex
+$ sage weave.sage input.Snw
 $ pdflatex input.tex
 ```
+
+(Note that it is also possible to make the file `weave.sage` executable
+and run it directly.)
 
 ### Example
 `.Snw` files are plain LaTeX files, with a little bit of extra syntax mixed in.
@@ -67,12 +72,55 @@ and $x = -\frac{1}{2} \, b + \frac{1}{2} \, \sqrt{b^{2} - 4 \, c}$.
 
 This, in result, is rendered as follows by PdfLaTeX:
 
-![example](figures/example.png)
+<p align="center"><img src="figures/example.png" height="24pt"></p>
+
+
+### Inserting figures
+Sage provides functionality to save figures as pdf files (or other file
+formats if necessary). This can directly be used to include Sage-generated
+figures.
+
+For example:
+
+```latex
+\documentclass{article}
+\usepackage{graphicx}
+
+\begin{document}
+<<>>=
+x1 = var("x1", latex_name = 'x_1')
+x2 = var("x2", latex_name = 'x_2')
+p = contour_plot(x1^2 + x2^2 + x1*x2, (x1, -5, 5), (x2, -5, 5), cmap = 'Blues')
+p.save('contour.pdf')
+@
+\begin{center}
+\includegraphics[width=.75\textwidth]{contour.pdf}
+\end{center}
+\end{document}
+```
+
+See also the demo in `demo/`.
+
+### Importing code from other Sage or python modules
+Importing code from other Sage or python modules is done in exactly the same
+way as in regular Sage:
+
+```latex
+\documentclass{article}
+<<>>=
+from module import my_function
+@
+
+\begin{document}
+My function returns: \sageexpr{my_function()}.
+\end{document}
+```
+
 
 ### Demonstration
 See the `demo/` directory for a demonstration.
 
 
 ### Contributing
-I'm happy with contributions!
+Feel free to make pull requests, as I'm generally happy with contributions.
 
